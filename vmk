@@ -74,8 +74,6 @@ read hdsize
 
 ## NIC (Iteracion por cada tarjeta de red)
 
-vmname=hola
-
 echo "[*] Numero de tarjetas de red: "
 read numnic
 
