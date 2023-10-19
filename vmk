@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+
+#
+#
+#  Programa de creacion asistida de maquinas virtuales por CLI
+#
+#  [Creador: Andrei Vlasin]           [Fecha: 18/09/23]
+#
+
+
+
+## Si se introduce el comando sin argumentos muestra la ayuda
+
+if [ ${#} -ne 1 ]
+
+
+then
+echo "Virtual Machine maKer"
+echo "====================="
+echo -e "USO:\n"
+echo "vmk (nombreDeLaMaquina)"
+
+exit 0
+
+else
+
+## Crea un directorio para almacenar la maquina virtual y el disco
+echo "[*] Ruta donde se quiere crear el entorno donde se alojara la maquina virtual: "
+echo "[!] Ha de ser una ruta ABSOLUTA"
+read rutap
+
+rutad=/home/client/Escritorio
+
+
+if [ ${#rutap} -eq 0 ]
+then
+ruta="/home/client/Escritorio/vms/"
+else
+ruta=${rutap}
+mkdir ${ruta}
+fi
+
+## Crea la maquina virtual y la registra
+
+vboxmanage createvm --name="${1}" --basefolder="${ruta}" --register
+
+
+## Especificaciones
+## Memoria
+clear
+echo -e "Sistema operativo deseado para la maquina virtual\n-------------------------------------------------"
+
+# Limpia la pantalla y pone una lista de los sistemas operativos disponibles
+vboxmanage list ostypes | grep '^ID:' | tr -s " " | cut -d ":" -f2 | tr -d " " | column -x
+echo ""
+read os
+
+echo "[*] Cantidad de memoria ram (en MB): "
+read mem
+
+## VRAM
+echo "[*] Cantidad de Memoria de video (en MB): "
+read vram
+
+## Nucleos de procesador
+echo "[*] Cantidad de nucleos de procesador: "
+read cpu
+
+## Tamaño disco duro
+echo "[*] Tamaño del disco duro (en MB): "
+read hdsize
+
+
+
+## NIC (Iteracion por cada tarjeta de red)
+
+vmname=hola
+
+echo "[*] Numero de tarjetas de red: "
+read numnic
+
+
+# Comprueba que el usuario ha introducido menos de 6 tarjetas de red
+
+if [ ${numnic} -gt 8 ]
+then
+echo "Demasidas tarjetas de red, son maximo 8"
+else
+i=1
+while [ ${i} -le ${numnic} ]
+do
+echo "[*] Elegir tipo de conexion para la tarjeta ${i}: "
+echo "[ none | null | nat | bridged | intnet | hostonly | hostonlynet | generic | natnetwork | cloud ]"
+read nictype
+
+echo "[*] Creando tarjeta..."
+vboxmanage modifyvm ${1} --nic${i} ${nictype}
+echo "[*] Tarjeta [${i}] creada"
+
+
+i=`expr ${i} + 1`
+done
+fi
+
+## ISO
+echo "[*] Ubicacion de iso. Escribir 'emptydrive' si no se quiere añadir"
+read iso
+
+## Creacion del puerto y del disco duro (Por defecto vdi)
+
+echo "[*] Creacion Disco duro ..."
+vboxmanage createmedium --filename "${ruta}/${1}/${1}.vdi" --size ${hdsize}
+echo ${ruta}
+
+echo "[*] Creacion de puerto de Disco duro ..."
+vboxmanage storagectl ${1} --add sata --name "SATA Controller" --controller IntelAHCI
+echo "[*] Anexo de Disco duro ..."
+vboxmanage storageattach ${1} --storagectl "SATA Controller" --port 0 --device 0 --type hdd --medium /${ruta}/${1}/${1}.vdi
+
+
+## Creacion de controladora y lectora de isos
+
+vboxmanage storageattach ${1} --storagectl "SATA Controller" --port 1 --device 0 --type dvddrive --medium ${iso}
+
+## Ejecucion de las especificaciones
+
+echo "[*] Añadiendo sistema operativo ..."
+vboxmanage modifyvm ${1} --ostype ${os}
+echo "[*] Añadiendo memoria ram ..."
+vboxmanage modifyvm ${1} --memory ${mem}
+echo "[*] Añadiendo memoria grafica ..."
+vboxmanage modifyvm ${1} --vram ${vram}
+echo "[*] Añadiendo nucleos de cpu ..."
+vboxmanage modifyvm ${1} --cpus ${cpu}
+
+fi
