@@ -29,6 +29,7 @@ echo "[*] Ruta donde se quiere crear el entorno donde se alojara la maquina virt
 echo "[!] Ha de ser una ruta ABSOLUTA"
 read rutap
 
+## Cambiar valor de la variable $rutad si se desea 
 rutad=/home/client/Escritorio
 
 
